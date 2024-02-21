@@ -1,5 +1,5 @@
 # chunker
-A simple chunker of audio stream by silence using GStreamer
+A simple chunker of audio stream by silence using GStreamer.
 
 ## Getting Started
 You need [GStreamer](https://gstreamer.freedesktop.org/documentation/index.html)
@@ -22,8 +22,15 @@ $ mkdir -p output # Create the directory if it does not exist
 $ _build/chunker -i "hello.wav" -o "output/%02d.wav" -m "muxer"
 ```
 
-You can use [`data/sample.wav`](data/sample.wav) to test the chunking process. You might have to
-adjust the parameters of elements in `create_chunker_pipeline` for better output.
+You can use [`data/sample.wav`](data/sample.wav) to test the chunking process.
+
+## Customization
+Chunker relies on GStreamer to do all the heavy-lifting. To improve the output,
+you should try tweaking the properties of
+[`removesilence`](https://gstreamer.freedesktop.org/documentation/removesilence/index.html?gi-language=c)
+element.
+
+You can do the customization by modifying the constants in [`chunker.h`](/chunker.h).
 
 ## References
 1. [`removesilence`](https://gstreamer.freedesktop.org/documentation/removesilence/index.html?gi-language=c) - GStreamer element to detect and remove silence.

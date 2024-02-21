@@ -7,6 +7,11 @@ add_project_arguments(['-Wno-unused-parameter'],
 
 gst = dependency('gstreamer-1.0')
 
-exe = executable('chunker', 'chunker.c',
+files = [
+  'chunker.c',
+  'chunker.h'
+]
+
+exe = executable('chunker', files,
   dependencies: gst,
   install : true)

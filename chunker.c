@@ -8,7 +8,7 @@
 
 #define G_LOG_DOMAIN "chunker"
 
-#include <gst/gst.h>
+#include "chunker.h"
 
 #include <stdlib.h>
 
@@ -86,7 +86,9 @@ create_chunker_pipeline (Context *ctx, char *input, char *output, char *muxer)
   silence = gst_element_factory_make_full ("removesilence",
                                            "silent", FALSE,
                                            "remove", TRUE,
-                                           "minimum-silence-time", GST_SECOND,
+                                           "hysteresis", CHUNKER_SILENCE_HYSTERESIS,
+                                           "minimum-silence-time", CHUNKER_MINIMUM_SILENCE_TIME,
+                                           "threshold", CHUNKER_SILENCE_THRESHOLD,
                                            NULL);
   encoder = gst_element_factory_make_full (muxer, NULL);
   muxsink = gst_element_factory_make_full ("splitmuxsink",
