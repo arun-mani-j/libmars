@@ -74,15 +74,24 @@ on_message (GstBus *bus, GstMessage *message, GstElement *muxsink)
 static void
 create_chunker_pipeline (Context *ctx, char *input, char *output, char *muxer)
 {
-  GstElement *filesrc, *decoder, *silence, *encoder, *muxsink;
+  GstElement *plsesrc = NULL, *filesrc = NULL, *decoder = NULL;
+  GstElement *silence, *encoder, *muxsink;
   GstPipeline *pipeline;
+  gboolean using_mic;
 
   g_autoptr (GstBus) bus;
 
-  filesrc = gst_element_factory_make_full ("filesrc",
-                                           "location", input,
-                                           NULL);
-  decoder = gst_element_factory_make_full ("decodebin", NULL);
+  using_mic = g_strcmp0 (input, CHUNKER_MIC) == 0;
+
+  if (using_mic) {
+    plsesrc = gst_element_factory_make_full ("pulsesrc", NULL);
+  } else {
+    filesrc = gst_element_factory_make_full ("filesrc",
+                                             "location", input,
+                                             NULL);
+    decoder = gst_element_factory_make_full ("decodebin", NULL);
+  }
+
   silence = gst_element_factory_make_full ("removesilence",
                                            "silent", FALSE,
                                            "remove", TRUE,
@@ -98,18 +107,27 @@ create_chunker_pipeline (Context *ctx, char *input, char *output, char *muxer)
 
   pipeline = GST_PIPELINE (gst_pipeline_new ("main"));
 
-  g_return_if_fail (filesrc != NULL && decoder != NULL &&
-                    silence != NULL && encoder != NULL &&
+  g_return_if_fail (silence != NULL && encoder != NULL &&
                     muxsink != NULL && pipeline != NULL);
 
-  ctx->pipeline = pipeline;
+  if (using_mic) {
+    g_return_if_fail (plsesrc != NULL);
 
-  g_signal_connect (decoder, "pad-added", G_CALLBACK (on_decoder_pad_added), silence);
+    gst_bin_add_many (GST_BIN (pipeline), plsesrc, silence, muxsink, NULL);
 
-  gst_bin_add_many (GST_BIN (pipeline), filesrc, decoder, silence, muxsink, NULL);
+    gst_element_link (plsesrc, silence);
+  } else {
+    g_return_if_fail (filesrc != NULL && decoder != NULL);
 
-  gst_element_link (filesrc, decoder);
+    g_signal_connect (decoder, "pad-added", G_CALLBACK (on_decoder_pad_added), silence);
+
+    gst_bin_add_many (GST_BIN (pipeline), filesrc, decoder, silence, muxsink, NULL);
+
+    gst_element_link (filesrc, decoder);
+  }
+
   gst_element_link (silence, muxsink);
+  ctx->pipeline = pipeline;
 
   bus = gst_pipeline_get_bus (pipeline);
   gst_bus_add_signal_watch (bus);
@@ -119,18 +137,18 @@ create_chunker_pipeline (Context *ctx, char *input, char *output, char *muxer)
 }
 
 
-static char *input = NULL;
+static char *input = CHUNKER_MIC;
 static char *output = NULL;
 static char *muxer = NULL;
 
 static GOptionEntry entries[] =
 {
   { "input", 'i', G_OPTION_FLAG_NONE, G_OPTION_ARG_FILENAME, &input,
-    "The input audio file to chunk like input.wav", "I" },
+    "The input audio file to chunk like \"input.wav\"; use \"mic\" to listen from mic (default)", "I" },
   { "output", 'o', G_OPTION_FLAG_NONE, G_OPTION_ARG_FILENAME, &output,
-    "The output format for chunks like output/%02d.wav", "O" },
+    "The output format for chunks like \"output/%02d.wav\"", "O" },
   { "muxer", 'm', G_OPTION_FLAG_NONE, G_OPTION_ARG_STRING, &muxer,
-    "The muxer to encode chunks like wavenc", "M"},
+    "The muxer to encode chunks like \"wavenc\"", "M"},
   G_OPTION_ENTRY_NULL,
 };
 
@@ -142,7 +160,7 @@ main (int argc, char *argv[])
   g_autoptr (GError) error;
   g_autoptr (GOptionContext) context;
 
-  context = g_option_context_new ("Chunk the audio file by silence");
+  context = g_option_context_new ("Chunk the audio stream by silence");
   g_option_context_add_main_entries (context, entries, NULL);
 
   if (!g_option_context_parse (context, &argc, &argv, &error)) {

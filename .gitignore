@@ -1,3 +1,6 @@
+.cache/*
+output/*
+
 # Prerequisites
 *.d
 
