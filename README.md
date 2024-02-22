@@ -22,6 +22,8 @@ $ mkdir -p output # Create the directory if it does not exist
 $ _build/chunker -i "hello.wav" -o "output/%02d.wav" -m "muxer"
 ```
 
+Pass `"mic"` to input, if you want to read from the default [mic](https://gstreamer.freedesktop.org/documentation/pulseaudio/pulsesrc.html?gi-language=c).
+
 You can use [`data/sample.wav`](data/sample.wav) to test the chunking process.
 
 ## Customization
