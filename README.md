@@ -26,11 +26,15 @@ Pass `"mic"` to input, if you want to read from the default [mic](https://gstrea
 
 You can use [`data/sample.wav`](data/sample.wav) to test the chunking process.
 
+By default, the chunking happens if the audio segment size crosses `7` seconds.
+
 ## Customization
 Chunker relies on GStreamer to do all the heavy-lifting. To improve the output,
 you should try tweaking the properties of
 [`removesilence`](https://gstreamer.freedesktop.org/documentation/removesilence/index.html?gi-language=c)
-element.
+and
+[`splitmuxsink`](https://gstreamer.freedesktop.org/documentation/multifile/splitmuxsink.html?gi-language=c)
+elements.
 
 You can do the customization by modifying the constants in [`chunker.h`](/chunker.h).
 
