@@ -102,6 +102,7 @@ create_chunker_pipeline (Context *ctx, char *input, char *output, char *muxer)
   encoder = gst_element_factory_make_full (muxer, NULL);
   muxsink = gst_element_factory_make_full ("splitmuxsink",
                                            "location", output,
+                                           "max-size-time", CHUNKER_MAX_SIZE_TIME,
                                            "muxer", encoder,
                                            NULL);
 
