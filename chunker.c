@@ -94,6 +94,7 @@ create_chunker_pipeline (Context *ctx, char *input, char *output, char *muxer)
 
   silence = gst_element_factory_make_full ("removesilence",
                                            "silent", FALSE,
+                                           "squash", TRUE,
                                            "remove", TRUE,
                                            "hysteresis", CHUNKER_SILENCE_HYSTERESIS,
                                            "minimum-silence-time", CHUNKER_MINIMUM_SILENCE_TIME,
