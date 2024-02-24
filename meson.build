@@ -1,17 +1,16 @@
-project('chunker', 'c',
-  version : '0.1',
+project('mars', 'c',
+  version : '0.2',
   default_options : ['warning_level=3'])
 
 add_project_arguments(['-Wno-unused-parameter'],
   language: 'c')
 
-gst = dependency('gstreamer-1.0')
+subdir('src')
 
 files = [
-  'chunker.c',
-  'chunker.h'
+ 'src/main.c',
 ]
 
-exe = executable('chunker', files,
-  dependencies: gst,
+exe = executable('mars', files,
+  dependencies: mars_dep,
   install : true)

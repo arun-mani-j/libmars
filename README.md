@@ -1,4 +1,4 @@
-# chunker
+# Mars Chunker
 A simple chunker of audio stream by silence using GStreamer.
 
 ## Getting Started
@@ -19,7 +19,7 @@ output in `/output` directory, then you can use the following command.
 
 ``` sh
 $ mkdir -p output # Create the directory if it does not exist
-$ _build/chunker -i "hello.wav" -o "output/%02d.wav" -m "muxer"
+$ _build/mars -i "hello.wav" -o "output/%02d.wav" -m "muxer"
 ```
 
 Pass `"mic"` to input, if you want to read from the default [mic](https://gstreamer.freedesktop.org/documentation/pulseaudio/pulsesrc.html?gi-language=c).
@@ -36,7 +36,12 @@ and
 [`splitmuxsink`](https://gstreamer.freedesktop.org/documentation/multifile/splitmuxsink.html?gi-language=c)
 elements.
 
-You can do the customization by modifying the constants in [`chunker.h`](/chunker.h).
+You can do the customization by modifying the properties of
+[`MarsChunker`](/src/chunker.c) in [`main`](/src/main.c).
+
+## Library
+[`MarsChunker`](/src/chunker.c) encapsulates the whole process. You can make use
+of it in your applications by using [`src/main.c`](/src/main.c) as an example.
 
 ## References
 1. [`removesilence`](https://gstreamer.freedesktop.org/documentation/removesilence/index.html?gi-language=c) - GStreamer element to detect and remove silence.
