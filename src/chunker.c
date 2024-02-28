@@ -33,6 +33,7 @@ enum {
   PROP_INPUT,
   PROP_OUTPUT,
   PROP_MUXER,
+  PROP_RATE,
   PROP_MAXIMUM_CHUNK_TIME,
   PROP_MINIMUM_SILENCE_TIME,
   PROP_SILENCE_HYSTERESIS,
@@ -48,6 +49,7 @@ struct _MarsChunker {
   char       *input;
   char       *output;
   char       *muxer;
+  gint        rate;
   guint64     hysteresis;
   guint64     max_chunk_time;
   guint64     min_silence_time;
@@ -78,6 +80,9 @@ mars_chunker_set_property (GObject      *object,
     break;
   case PROP_MUXER:
     self->muxer = g_value_dup_string (value);
+    break;
+  case PROP_RATE:
+    self->rate = g_value_get_int (value);
     break;
   case PROP_MAXIMUM_CHUNK_TIME:
     self->max_chunk_time = g_value_get_uint64 (value);
@@ -115,6 +120,9 @@ mars_chunker_get_property (GObject    *object,
   case PROP_MUXER:
     g_value_set_string (value, self->muxer);
     break;
+  case PROP_RATE:
+    g_value_set_int (value, self->rate);
+    break;
   case PROP_MAXIMUM_CHUNK_TIME:
     g_value_set_uint64 (value, self->max_chunk_time);
     break;
@@ -140,7 +148,8 @@ const char* FILE_SEGMENT = "filesrc location=%s ! decodebin";
 const char* MIC_SEGMENT = "pulsesrc";
 const char* COMMON_SEGEMENT =
   "removesilence silent=false squash=true remove=true hysteresis=%lu "
-  "minimum-silence-time=%lu threshold=%i "
+    "minimum-silence-time=%lu threshold=%i "
+  "! audioresample ! audio/x-raw, rate=%i "
   "! splitmuxsink name=muxsink location=%s max-size-time=%lu muxer=%s";
 
 
@@ -161,7 +170,7 @@ create_pipeline (MarsChunker *self)
 
   rest_segment = g_strdup_printf (COMMON_SEGEMENT,
                                   self->hysteresis, self->min_silence_time, self->threshold,
-                                  self->output, self->max_chunk_time, self->muxer);
+                                  self->rate, self->output, self->max_chunk_time, self->muxer);
   parse_desc = g_strjoin (" ! ", input_segment, rest_segment, NULL);
 
   g_debug ("Effective pipeline: %s", parse_desc);
@@ -348,6 +357,17 @@ mars_chunker_class_init (MarsChunkerClass *klass)
                          G_PARAM_READWRITE |
                          G_PARAM_CONSTRUCT_ONLY |
                          G_PARAM_STATIC_STRINGS);
+
+  /**
+   * MarsChunker:rate:
+   *
+   * Sample rate of chunked audio. */
+  props[PROP_RATE] =
+    g_param_spec_int ("rate", "", "",
+                      1, G_MAXINT, 44100,
+                      G_PARAM_READWRITE |
+                      G_PARAM_CONSTRUCT_ONLY |
+                      G_PARAM_STATIC_STRINGS);
 
   /**
    * MarsChunker:maximum-chunk-time:
