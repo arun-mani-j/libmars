@@ -46,7 +46,12 @@ main (int argc, char **argv)
 
   gst_init (&argc, &argv);
 
-  chunker = mars_chunker_new (input, output, muxer);
+  chunker = g_object_new (MARS_TYPE_CHUNKER,
+                          "input", input,
+                          "output", output,
+                          "muxer", muxer,
+                          "rate", 8000,
+                          NULL);
   mars_chunker_play (chunker);
 
   if (g_strcmp0 (input, MARS_CHUNKER_INPUT_MIC) == 0) {
