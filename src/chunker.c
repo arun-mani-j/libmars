@@ -10,7 +10,7 @@
 
 #include "chunker.h"
 
-#include "gst/gst.h"
+#include <gst/gst.h>
 
 /**
  * MarsChunker:
@@ -32,6 +32,7 @@ enum {
   PROP_0,
   PROP_INPUT,
   PROP_OUTPUT,
+  PROP_SINK,
   PROP_MUXER,
   PROP_RATE,
   PROP_MAXIMUM_CHUNK_TIME,
@@ -48,6 +49,7 @@ struct _MarsChunker {
 
   char       *input;
   char       *output;
+  GstElement *sink;
   char       *muxer;
   gint        rate;
   guint64     hysteresis;
@@ -77,6 +79,9 @@ mars_chunker_set_property (GObject      *object,
     break;
   case PROP_OUTPUT:
     self->output = g_value_dup_string (value);
+    break;
+  case PROP_SINK:
+    self->sink = g_value_get_object (value);
     break;
   case PROP_MUXER:
     self->muxer = g_value_dup_string (value);
@@ -115,7 +120,10 @@ mars_chunker_get_property (GObject    *object,
     g_value_set_string (value, self->input);
     break;
   case PROP_OUTPUT:
-    g_value_set_string (value, self->output);
+    g_value_set_string (value, self->input);
+    break;
+  case PROP_SINK:
+    g_value_set_object (value, self->sink);
     break;
   case PROP_MUXER:
     g_value_set_string (value, self->muxer);
@@ -144,13 +152,12 @@ mars_chunker_get_property (GObject    *object,
 }
 
 
-const char* FILE_SEGMENT = "filesrc location=%s ! decodebin";
-const char* MIC_SEGMENT = "pulsesrc";
-const char* COMMON_SEGEMENT =
+static const char* FILE_SEGMENT = "filesrc location=%s ! decodebin";
+static const char* MIC_SEGMENT = "pulsesrc";
+static const char* COMMON_SEGEMENT =
   "removesilence silent=false squash=true remove=true hysteresis=%lu "
-    "minimum-silence-time=%lu threshold=%i "
-  "! audioresample ! audio/x-raw, rate=%i "
-  "! splitmuxsink name=muxsink location=%s max-size-time=%lu muxer=%s";
+  "  minimum-silence-time=%lu threshold=%i ! "
+  "audioresample name=resample";
 
 
 static GstElement *
@@ -159,6 +166,9 @@ create_pipeline (MarsChunker *self)
   gboolean using_mic;
   g_autofree char *input_segment, *rest_segment, *parse_desc;
   g_autoptr (GError) error = NULL;
+  g_autoptr (GstElement) resample = NULL;
+  g_autoptr (GstCaps) caps = NULL;
+  GstElement *splitmuxsink;
   GstElement *pipeline;
 
   using_mic = g_strcmp0 (self->input, MARS_CHUNKER_INPUT_MIC) == 0;
@@ -169,19 +179,49 @@ create_pipeline (MarsChunker *self)
     input_segment = g_strdup_printf (FILE_SEGMENT, self->input);
 
   rest_segment = g_strdup_printf (COMMON_SEGEMENT,
-                                  self->hysteresis, self->min_silence_time, self->threshold,
-                                  self->rate, self->output, self->max_chunk_time, self->muxer);
+                                  self->hysteresis,
+                                  self->min_silence_time, self->threshold,
+                                  NULL);
   parse_desc = g_strjoin (" ! ", input_segment, rest_segment, NULL);
-
-  g_debug ("Effective pipeline: %s", parse_desc);
 
   pipeline = gst_parse_launch (parse_desc, &error);
 
   if (error) {
-    if (pipeline == NULL)
+    if (pipeline == NULL) {
       g_critical ("Unable to create pipeline: %s", error->message);
-    else
+      return NULL;
+    } else {
       g_warning ("%s", error->message);
+    }
+  }
+
+  if (self->output) {
+    splitmuxsink = gst_element_factory_make_full ("splitmuxsink",
+                                                  "name", "muxsink",
+                                                  "location", self->output,
+                                                  "max-size-time", self->max_chunk_time,
+                                                  "muxer-factory", self->muxer,
+                                                  NULL);
+  } else {
+    splitmuxsink = gst_element_factory_make_full ("splitmuxsink",
+                                                  "name", "muxsink",
+                                                  "sink", self->sink,
+                                                  "max-size-time", self->max_chunk_time,
+                                                  "muxer-factory", self->muxer,
+                                                  NULL);
+  }
+
+  if (!gst_bin_add (GST_BIN (pipeline), splitmuxsink)) {
+    g_critical ("Unable to add splitmuxsink");
+    return NULL;
+  }
+
+  resample = gst_bin_get_by_name (GST_BIN (pipeline), "resample");
+  caps = gst_caps_new_simple ("audio/x-raw", "rate", G_TYPE_INT, self->rate, NULL);
+
+  if (!gst_element_link_filtered (resample, splitmuxsink, caps)) {
+    g_critical ("Unable to link audioresample and splitmuxsink");
+    return NULL;
   }
 
   return pipeline;
@@ -228,27 +268,6 @@ on_message (MarsChunker *self, GstMessage *message)
 }
 
 
-static void
-on_state_changed (MarsChunker *self, GstMessage *message)
-{
-  gboolean playing;
-  GstState state;
-
-  if (message)
-    gst_message_parse_state_changed (message, NULL, &state, NULL);
-  else
-    state = GST_STATE_NULL;
-
-  playing = state == GST_STATE_PLAYING;
-
-  if (playing == self->playing)
-    return;
-
-  self->playing = playing;
-  g_object_notify_by_pspec (G_OBJECT (self), props[PROP_PLAYING]);
-}
-
-
 static GstBusSyncReply
 sync_message_handler (GstBus *bus, GstMessage *message, MarsChunker *self)
 {
@@ -258,9 +277,6 @@ sync_message_handler (GstBus *bus, GstMessage *message, MarsChunker *self)
     break;
   case GST_MESSAGE_ERROR:
     on_error (self, message);
-    break;
-  case GST_MESSAGE_STATE_CHANGED:
-    on_state_changed (self, message);
     break;
   default:
     on_message (self, message);
@@ -339,7 +355,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:output:
    *
-   * Proxy for `Gst.splitmuxsink:location`.*/
+   * Proxy for `Gst.splitmuxsink:location`.
+   * Takes precedence over `MarsChunker:sink`.  */
   props[PROP_OUTPUT] =
     g_param_spec_string ("output", "", "",
                          NULL,
@@ -348,9 +365,20 @@ mars_chunker_class_init (MarsChunkerClass *klass)
                          G_PARAM_STATIC_STRINGS);
 
   /**
+   * MarsChunker:sink:
+   *
+   * Proxy for `Gst.splitmuxsink:sink`.*/
+  props[PROP_SINK] =
+    g_param_spec_object ("sink", "", "",
+                         GST_TYPE_ELEMENT,
+                         G_PARAM_READWRITE |
+                         G_PARAM_CONSTRUCT_ONLY |
+                         G_PARAM_STATIC_STRINGS);
+
+  /**
    * MarsChunker:muxer:
    *
-   * Proxy for `Gst.splitmuxsink:muxer`. */
+   * Proxy for `Gst.splitmuxsink:muxer-factory`. */
   props[PROP_MUXER] =
     g_param_spec_string ("muxer", "", "",
                          NULL,
@@ -464,7 +492,11 @@ mars_chunker_play (MarsChunker *self)
 {
   g_return_if_fail (MARS_IS_CHUNKER (self));
 
+  g_debug ("Starting playback");
+  self->playing = TRUE;
+
   gst_element_set_state (self->pipeline, GST_STATE_PLAYING);
+  g_object_notify_by_pspec (G_OBJECT (self), props[PROP_PLAYING]);
 }
 
 
@@ -473,7 +505,11 @@ mars_chunker_pause (MarsChunker *self)
 {
   g_return_if_fail (MARS_IS_CHUNKER (self));
 
+  g_debug ("Pausing playback");
+  self->playing = FALSE;
+
   gst_element_set_state (self->pipeline, GST_STATE_PAUSED);
+  g_object_notify_by_pspec (G_OBJECT (self), props[PROP_PLAYING]);
 }
 
 
@@ -483,7 +519,8 @@ mars_chunker_stop (MarsChunker *self)
   g_return_if_fail (MARS_IS_CHUNKER (self));
 
   g_debug ("Stopping playback");
+  self->playing = FALSE;
 
-  on_state_changed (self, NULL);
   gst_element_set_state (self->pipeline, GST_STATE_NULL);
+  g_object_notify_by_pspec (G_OBJECT (self), props[PROP_PLAYING]);
 }

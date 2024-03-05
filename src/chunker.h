@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 Tether Operations Limited
+ * Copyright (C) 2024 Tether Operations Limited
  *
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
