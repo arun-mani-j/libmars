@@ -152,10 +152,9 @@ mars_chunker_get_property (GObject    *object,
 }
 
 
-static const char* FILE_SEGMENT = "filesrc location=%s ! decodebin";
-static const char* MIC_SEGMENT = "pulsesrc";
-static const char* COMMON_SEGEMENT =
-  "removesilence silent=false squash=true remove=true hysteresis=%lu "
+static const char* PIPELINE_TEMPLATE =
+  "decodebin name=decodebin ! audioconvert "
+  "! removesilence silent=false squash=true remove=true hysteresis=%lu "
   "  minimum-silence-time=%lu threshold=%i ! "
   "audioresample name=resample";
 
@@ -164,25 +163,26 @@ static GstElement *
 create_pipeline (MarsChunker *self)
 {
   gboolean using_mic;
-  g_autofree char *input_segment, *rest_segment, *parse_desc;
+  g_autofree char *parse_desc;
   g_autoptr (GError) error = NULL;
+  g_autoptr (GstElement) decodebin = NULL;
   g_autoptr (GstElement) resample = NULL;
   g_autoptr (GstCaps) caps = NULL;
+  GstElement *src;
   GstElement *splitmuxsink;
   GstElement *pipeline;
 
   using_mic = g_strcmp0 (self->input, MARS_CHUNKER_INPUT_MIC) == 0;
 
   if (using_mic)
-    input_segment = g_strdup (MIC_SEGMENT);
+    src = gst_element_factory_make ("pulsesrc", NULL);
   else
-    input_segment = g_strdup_printf (FILE_SEGMENT, self->input);
+    src = gst_element_factory_make_full ("filesrc", "location", self->input, NULL);
 
-  rest_segment = g_strdup_printf (COMMON_SEGEMENT,
-                                  self->hysteresis,
-                                  self->min_silence_time, self->threshold,
-                                  NULL);
-  parse_desc = g_strjoin (" ! ", input_segment, rest_segment, NULL);
+  parse_desc = g_strdup_printf (PIPELINE_TEMPLATE,
+                                self->hysteresis,
+                                self->min_silence_time, self->threshold,
+                                NULL);
 
   pipeline = gst_parse_launch (parse_desc, &error);
 
@@ -193,6 +193,18 @@ create_pipeline (MarsChunker *self)
     } else {
       g_warning ("%s", error->message);
     }
+  }
+
+  if (!gst_bin_add (GST_BIN (pipeline), src)) {
+    g_critical ("Unable to add source");
+    return NULL;
+  }
+
+  decodebin = gst_bin_get_by_name (GST_BIN (pipeline), "decodebin");
+
+  if (!gst_element_link (src, decodebin)) {
+    g_critical ("Unable to link source and decodebin");
+    return NULL;
   }
 
   if (self->output) {
