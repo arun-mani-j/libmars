@@ -185,7 +185,7 @@ create_pipeline (MarsChunker *self)
   if (self->src != NULL)
     src = self->src;
   else if (using_mic)
-    src = gst_element_factory_make ("pulsesrc", NULL);
+    src = gst_element_factory_make ("autoaudiosrc", NULL);
   else
     src = gst_element_factory_make_full ("filesrc", "location", self->input, NULL);
 
