@@ -31,6 +31,7 @@ static guint signals[N_SIGNALS];
 enum {
   PROP_0,
   PROP_INPUT,
+  PROP_SRC,
   PROP_OUTPUT,
   PROP_SINK,
   PROP_MUXER,
@@ -48,6 +49,7 @@ struct _MarsChunker {
   GObject     parent;
 
   char       *input;
+  GstElement *src;
   char       *output;
   GstElement *sink;
   char       *muxer;
@@ -76,6 +78,9 @@ mars_chunker_set_property (GObject      *object,
   switch (property_id) {
   case PROP_INPUT:
     self->input = g_value_dup_string (value);
+    break;
+  case PROP_SRC:
+    self->src = g_value_get_object (value);
     break;
   case PROP_OUTPUT:
     self->output = g_value_dup_string (value);
@@ -118,6 +123,9 @@ mars_chunker_get_property (GObject    *object,
   switch (property_id) {
   case PROP_INPUT:
     g_value_set_string (value, self->input);
+    break;
+  case PROP_SRC:
+    g_value_set_object (value, self->src);
     break;
   case PROP_OUTPUT:
     g_value_set_string (value, self->input);
@@ -174,7 +182,9 @@ create_pipeline (MarsChunker *self)
 
   using_mic = g_strcmp0 (self->input, MARS_CHUNKER_INPUT_MIC) == 0;
 
-  if (using_mic)
+  if (self->src != NULL)
+    src = self->src;
+  else if (using_mic)
     src = gst_element_factory_make ("pulsesrc", NULL);
   else
     src = gst_element_factory_make_full ("filesrc", "location", self->input, NULL);
@@ -360,6 +370,17 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   props[PROP_INPUT] =
     g_param_spec_string ("input", "", "",
                          MARS_CHUNKER_INPUT_MIC,
+                         G_PARAM_READWRITE |
+                         G_PARAM_CONSTRUCT_ONLY |
+                         G_PARAM_STATIC_STRINGS);
+
+  /**
+   * MarsChunker:src:
+   *
+   * Arbitrary element to use as source.*/
+  props[PROP_SRC] =
+    g_param_spec_object ("src", "", "",
+                         GST_TYPE_ELEMENT,
                          G_PARAM_READWRITE |
                          G_PARAM_CONSTRUCT_ONLY |
                          G_PARAM_STATIC_STRINGS);
