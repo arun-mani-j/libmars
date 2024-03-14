@@ -9,8 +9,8 @@ for the usage. [Meson](https://mesonbuild.com/) can be used to build the
 project.
 
 ```sh
-$ git clone git@github.com:arun-mani-j/chunker.git
-$ cd chunker
+$ git clone git@github.com:arun-mani-j/libmars.git
+$ cd libmars
 $ meson setup _build/ # Setup build directory
 $ meson compile -C _build/ # Compile the project
 ```
@@ -26,7 +26,7 @@ save its output in `/output` directory, then you can use the following command.
 
 ```sh
 $ mkdir -p output # Create the directory if it does not exist
-$ _build/examples/chunker -i "hello.wav" -o "output/%02d.wav" -m "muxer"
+$ _build/examples/chunker -i "data/sample.wav" -o "output/%02d.wav" -m "wavenc"
 ```
 
 Pass `"mic"` to input, if you want to read from the default [mic](https://gstreamer.freedesktop.org/documentation/pulseaudio/pulsesrc.html?gi-language=c).
@@ -55,7 +55,7 @@ aggregate the buffers and call them when the stream ends.
 The following example prints the number of buffers the sink received.
 
 ```sh
-$ _build/examples/callback-sink -i "data/sample.wav" -m "muxer"
+$ _build/examples/callback-sink -i "data/sample.wav" -m "wavenc"
 
 ```
 
