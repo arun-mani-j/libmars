@@ -30,7 +30,11 @@ struct _MarsCallbackSink {
   GstBaseSink            parent;
 
   MarsBufferCallback     buffer_cb;
+  gpointer               buffer_cb_user_data;
+  GDestroyNotify         buffer_cb_destroy;
   MarsBufferListCallback buffer_list_cb;
+  gpointer               buffer_list_cb_user_data;
+  GDestroyNotify         buffer_list_cb_destroy;
   GPtrArray             *buffers;
 };
 
@@ -55,7 +59,7 @@ render (GstBaseSink *sink, GstBuffer *buffer)
   g_ptr_array_add (self->buffers, gst_buffer_ref (buffer));
 
   if (self->buffer_cb)
-    self->buffer_cb (buffer);
+    self->buffer_cb (buffer, self->buffer_cb_user_data);
 
   return GST_FLOW_OK;
 }
@@ -69,7 +73,7 @@ stop (GstBaseSink *sink)
   g_debug ("Stopping with buffers: %d", self->buffers->len);
 
   if (self->buffer_list_cb)
-    self->buffer_list_cb (self->buffers);
+    self->buffer_list_cb (self->buffers, self->buffer_list_cb_user_data);
 
   g_ptr_array_remove_range (self->buffers, 0, self->buffers->len);
 
@@ -81,6 +85,12 @@ static void
 mars_callback_sink_finalize (GObject *object)
 {
   MarsCallbackSink *self = MARS_CALLBACK_SINK (object);
+
+  if (self->buffer_cb_destroy != NULL)
+    self->buffer_cb_destroy (self->buffer_cb_user_data);
+
+  if (self->buffer_list_cb_destroy != NULL)
+    self->buffer_list_cb_destroy (self->buffer_list_cb_user_data);
 
   g_ptr_array_free (self->buffers, TRUE);
 
@@ -126,19 +136,34 @@ mars_callback_sink_new (void)
 
 
 void
-mars_callback_sink_set_buffer_callback (MarsCallbackSink *self, MarsBufferCallback buffer_cb)
+mars_callback_sink_set_buffer_callback (MarsCallbackSink  *self,
+                                        MarsBufferCallback buffer_cb,
+                                        gpointer           user_data,
+                                        GDestroyNotify     destroy)
 {
   g_return_if_fail (MARS_IS_CALLBACK_SINK (self));
 
+  if (self->buffer_cb_destroy != NULL)
+    self->buffer_cb_destroy (self->buffer_cb_user_data);
+
   self->buffer_cb = buffer_cb;
+  self->buffer_cb_user_data = user_data;
+  self->buffer_cb_destroy = destroy;
 }
 
 
 void
 mars_callback_sink_set_buffer_list_callback (MarsCallbackSink      *self,
-                                             MarsBufferListCallback buffer_list_cb)
+                                             MarsBufferListCallback buffer_list_cb,
+                                             gpointer               user_data,
+                                             GDestroyNotify         destroy)
 {
   g_return_if_fail (MARS_IS_CALLBACK_SINK (self));
 
+  if (self->buffer_list_cb_destroy != NULL)
+    self->buffer_list_cb_destroy (self->buffer_list_cb_user_data);
+
   self->buffer_list_cb = buffer_list_cb;
+  self->buffer_list_cb_user_data = user_data;
+  self->buffer_list_cb_destroy = destroy;
 }

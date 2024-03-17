@@ -22,7 +22,7 @@ static GOptionEntry entries[] =
 
 
 static void
-on_buffer_list_cb (GPtrArray *buffers)
+on_buffer_list_cb (GPtrArray *buffers, gpointer user_data)
 {
   printf ("Got buffers: %d\n", buffers->len);
   fflush (stdout);
@@ -54,7 +54,8 @@ main (int argc, char **argv)
   gst_init (&argc, &argv);
 
   sink = mars_callback_sink_new ();
-  mars_callback_sink_set_buffer_list_callback (MARS_CALLBACK_SINK (sink), on_buffer_list_cb);
+  mars_callback_sink_set_buffer_list_callback (MARS_CALLBACK_SINK (sink),
+                                               on_buffer_list_cb, NULL, NULL);
 
   chunker = g_object_new (MARS_TYPE_CHUNKER,
                           "input", input,
