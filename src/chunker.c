@@ -366,7 +366,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
    * MarsChunker:input:
    *
    * Proxy for `Gst.filesrc:location`.
-   * Use `mic` to read from microphone.  */
+   * Use `mic` to read from microphone.
+   */
   props[PROP_INPUT] =
     g_param_spec_string ("input", "", "",
                          MARS_CHUNKER_INPUT_MIC,
@@ -377,7 +378,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:src:
    *
-   * Arbitrary element to use as source.*/
+   * Arbitrary element to use as source.
+   */
   props[PROP_SRC] =
     g_param_spec_object ("src", "", "",
                          GST_TYPE_ELEMENT,
@@ -389,7 +391,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
    * MarsChunker:output:
    *
    * Proxy for `Gst.splitmuxsink:location`.
-   * Takes precedence over `MarsChunker:sink`.  */
+   * Takes precedence over `MarsChunker:sink`.
+   */
   props[PROP_OUTPUT] =
     g_param_spec_string ("output", "", "",
                          NULL,
@@ -400,7 +403,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:sink:
    *
-   * Proxy for `Gst.splitmuxsink:sink`.*/
+   * Proxy for `Gst.splitmuxsink:sink`.
+   */
   props[PROP_SINK] =
     g_param_spec_object ("sink", "", "",
                          GST_TYPE_ELEMENT,
@@ -411,7 +415,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:muxer:
    *
-   * Proxy for `Gst.splitmuxsink:muxer-factory`. */
+   * Proxy for `Gst.splitmuxsink:muxer-factory`.
+   */
   props[PROP_MUXER] =
     g_param_spec_string ("muxer", "", "",
                          NULL,
@@ -422,7 +427,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:rate:
    *
-   * Sample rate of chunked audio. */
+   * Sample rate of chunked audio.
+   */
   props[PROP_RATE] =
     g_param_spec_int ("rate", "", "",
                       1, G_MAXINT, 44100,
@@ -433,7 +439,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:maximum-chunk-time:
    *
-   * Proxy for `Gst.splitmuxsink:max-size-time`. */
+   * Proxy for `Gst.splitmuxsink:max-size-time`.
+   */
   props[PROP_MAXIMUM_CHUNK_TIME] =
     g_param_spec_uint64 ("maximum-chunk-time", "", "",
                          0, G_MAXUINT64, MARS_CHUNKER_MAXIMUM_CHUNK_TIME,
@@ -444,7 +451,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:minimum-silence-time:
    *
-   * Proxy for `Gst.removesilence:minimum-silence-time`. */
+   * Proxy for `Gst.removesilence:minimum-silence-time`.
+   */
   props[PROP_MINIMUM_SILENCE_TIME] =
     g_param_spec_uint64 ("minimum-silence-time", "", "",
                          0, G_MAXUINT64, MARS_CHUNKER_MINIMUM_SILENCE_TIME,
@@ -455,7 +463,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:silence-hysteresis:
    *
-   * Proxy for `Gst.removesilence:hysteresis`. */
+   * Proxy for `Gst.removesilence:hysteresis`.
+   */
   props[PROP_SILENCE_HYSTERESIS] =
     g_param_spec_uint64 ("silence-hysteresis", "", "",
                          0, G_MAXUINT64, MARS_CHUNKER_SILENCE_HYSTERESIS,
@@ -466,7 +475,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:silence-threshold:
    *
-   * Proxy for `Gst.removesilence:threshold`. */
+   * Proxy for `Gst.removesilence:threshold`.
+   */
   props[PROP_SILENCE_THRESHOLD] =
     g_param_spec_int ("silence-threshold", "", "",
                       G_MININT, G_MAXINT, MARS_CHUNKER_SILENCE_THRESHOLD,
@@ -477,7 +487,8 @@ mars_chunker_class_init (MarsChunkerClass *klass)
   /**
    * MarsChunker:playing:
    *
-   * Whether the pipeline is in playing state. */
+   * Whether the pipeline is in playing state.
+   */
   props[PROP_PLAYING] =
     g_param_spec_boolean ("playing", "", "",
                           FALSE,
