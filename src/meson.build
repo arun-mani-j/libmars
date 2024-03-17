@@ -17,3 +17,21 @@ mars_dep = declare_dependency(
   link_with: mars_lib,
   dependencies: gst
 )
+
+gnome = import('gnome')
+gir_args = [
+    '-DMARS_COMPILATION',
+    '--quiet',
+]
+mars_gir = gnome.generate_gir(mars_lib,
+  sources: files,
+  namespace: 'Mars',
+  nsversion: '1.0',
+  identifier_prefix: 'Mars',
+  symbol_prefix: 'mars',
+  export_packages: 'mars1',
+  includes: [ 'GLib-2.0', 'GObject-2.0', 'Gst-1.0', 'GstBase-1.0' ],
+  install: true,
+  dependencies: deps,
+  extra_args: gir_args,
+)

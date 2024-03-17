@@ -65,6 +65,14 @@ Pass `"mic"` to input, if you want to read from the default [mic](https://gstrea
 
 You can use `libmars.so` in your application. See [`examples/`](examples/) for a demonstration.
 
+## G-I Support
+
+Mars supports [GNOME
+Introspection](https://gi.readthedocs.io/en/latest/index.html). So you can use
+it in all the languages supported by G-I which includes Python, Rust, Vala etc.
+
+See [`examples/chunker.py`](/examples/chunker.py) for an example.
+
 ## References
 
 1. [`removesilence`](https://gstreamer.freedesktop.org/documentation/removesilence/index.html?gi-language=c) - GStreamer element to detect and remove silence.
