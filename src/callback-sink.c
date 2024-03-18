@@ -35,7 +35,7 @@ struct _MarsCallbackSink {
   MarsBufferListCallback buffer_list_cb;
   gpointer               buffer_list_cb_user_data;
   GDestroyNotify         buffer_list_cb_destroy;
-  GPtrArray             *buffers;
+  GstBufferList         *buffers;
 };
 
 G_DEFINE_TYPE (MarsCallbackSink, mars_callback_sink, GST_TYPE_BASE_SINK)
@@ -55,8 +55,8 @@ render (GstBaseSink *sink, GstBuffer *buffer)
 {
   MarsCallbackSink *self = MARS_CALLBACK_SINK (sink);
 
-  g_debug ("Rendering buffer: %d", self->buffers->len + 1);
-  g_ptr_array_add (self->buffers, gst_buffer_ref (buffer));
+  g_debug ("Rendering buffer: %d", gst_buffer_list_length (self->buffers) + 1);
+  gst_buffer_list_add (self->buffers, gst_buffer_ref (buffer));
 
   if (self->buffer_cb)
     self->buffer_cb (buffer, self->buffer_cb_user_data);
@@ -70,12 +70,12 @@ stop (GstBaseSink *sink)
 {
   MarsCallbackSink *self = MARS_CALLBACK_SINK (sink);
 
-  g_debug ("Stopping with buffers: %d", self->buffers->len);
+  g_debug ("Stopping with buffers: %d", gst_buffer_list_length (self->buffers));
 
   if (self->buffer_list_cb)
     self->buffer_list_cb (self->buffers, self->buffer_list_cb_user_data);
 
-  g_ptr_array_remove_range (self->buffers, 0, self->buffers->len);
+  gst_buffer_list_remove (self->buffers, 0, gst_buffer_list_length (self->buffers));
 
   return TRUE;
 }
@@ -92,7 +92,7 @@ mars_callback_sink_finalize (GObject *object)
   if (self->buffer_list_cb_destroy != NULL)
     self->buffer_list_cb_destroy (self->buffer_list_cb_user_data);
 
-  g_ptr_array_free (self->buffers, TRUE);
+  gst_clear_buffer_list (&self->buffers);
 
   G_OBJECT_CLASS (mars_callback_sink_parent_class)->finalize (object);
 }
@@ -124,7 +124,7 @@ mars_callback_sink_class_init (MarsCallbackSinkClass *klass)
 static void
 mars_callback_sink_init (MarsCallbackSink *self)
 {
-  self->buffers = g_ptr_array_new_with_free_func ((GDestroyNotify) gst_buffer_unref);
+  self->buffers = gst_buffer_list_new ();
 }
 
 

@@ -22,9 +22,9 @@ static GOptionEntry entries[] =
 
 
 static void
-on_buffer_list_cb (GPtrArray *buffers, gpointer user_data)
+on_buffer_list_cb (GstBufferList *buffers, gpointer user_data)
 {
-  printf ("Got buffers: %d\n", buffers->len);
+  printf ("Got buffers: %d\n", gst_buffer_list_length (buffers));
   fflush (stdout);
 }
 

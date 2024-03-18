@@ -14,7 +14,7 @@ G_BEGIN_DECLS
 G_DECLARE_FINAL_TYPE (MarsCallbackSink, mars_callback_sink, MARS, CALLBACK_SINK, GstBaseSink)
 
 typedef void (*MarsBufferCallback) (GstBuffer *buffer, gpointer user_data);
-typedef void (*MarsBufferListCallback) (GPtrArray *buffer_list, gpointer user_data);
+typedef void (*MarsBufferListCallback) (GstBufferList *buffer_list, gpointer user_data);
 
 GstElement *mars_callback_sink_new (void);
 
