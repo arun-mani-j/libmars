@@ -15,13 +15,14 @@ mars_lib_inc = [mars_inc, root_inc]
 mars_lib = library('mars', files, dependencies: deps)
 mars_dep = declare_dependency(
   link_with: mars_lib,
-  dependencies: gst
+  dependencies: deps,
 )
 
 gnome = import('gnome')
 gir_args = [
     '-DMARS_COMPILATION',
     '--quiet',
+    '--add-init-section=extern void gst_init(gint*,gchar**);' + 'gst_init(NULL,NULL);'
 ]
 mars_gir = gnome.generate_gir(mars_lib,
   sources: files,
